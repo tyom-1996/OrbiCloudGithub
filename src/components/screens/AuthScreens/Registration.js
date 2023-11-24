@@ -37,7 +37,8 @@ import {Link} from "@react-navigation/native";
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
-function Login (props) {
+
+function Register (props) {
 
     const [auth_key, setAuthKey] = useState('');
     const [email, setEmail] = useState('');
@@ -45,9 +46,130 @@ function Login (props) {
     const [password, setPassword] = useState('');
     const [confirm_password, setConfirmPassword] = useState('');
     const [financial_mentor, setFinancialMentor] = useState('');
+    const [login_error, setLoginError] = useState(false);
+    const [login_error_text, setLoginErrorText] = useState('');
+    const [password_error, setPasswordError] = useState(false);
+    const [password_error_text, setPasswordErrorText] = useState('');
+
+    const [email_error, setEmailError] = useState(false);
+    const [email_error_text, setEmailErrorText] = useState('');
+
+    const [show_pin_code_popup, setShowPinCodePopup] = useState(false);
+
+    const [pin_code, setPinCode] = useState('');
+    const [pin_code_error, setPinCodeError] = useState(false);
+    const [pin_code_error_text, setPinCodeErrorText] = useState('');
+    const [token, setToken] = useState('');
 
     const context = useContext(AuthContext);
 
+
+    const register = () => {
+
+        var myHeaders = new Headers();
+
+        if (email.length == 0 || phone.length == 0 || password.length == 0 || confirm_password.length == 0 || confirm_password != password) {
+                setLoginError(true)
+                setLoginErrorText('login_empty')
+                if (confirm_password != password) {
+                    setLoginError(false)
+                    setLoginErrorText('')
+                    setPasswordError(true)
+                    setPasswordErrorText('The password confirmation does not match!')
+                } else {
+                    setPasswordError(false)
+                    setPasswordErrorText('')
+                }
+        } else {
+            setPasswordError(false)
+            setPasswordErrorText('')
+            setLoginError(false)
+            setLoginErrorText('')
+
+            let formdata = new FormData();
+            formdata.append("uMail", email);
+            formdata.append("uPhone", phone);
+            formdata.append("uPass", password);
+            formdata.append("Pass2", confirm_password);
+            formdata.append("uRef", financial_mentor);
+            formdata.append("api_access", "100");
+
+            let requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                body: formdata,
+                redirect: 'follow'
+            };
+
+            fetch("https://orbicloud.com/create", requestOptions)
+                .then(response => response.json())
+                .then(result =>
+                    {
+                        console.log(result, 'register')
+                        if (result?.status === false) {
+                             if (result?.error_msg == 'Mail used') {
+                                    setEmailError(true)
+                                    setEmailErrorText('The email already exists')
+                             } else {
+                                 setEmailError(false)
+                                 setEmailErrorText('')
+                             }
+                        }
+                        if (result?.success === true) {
+                            setAuthKey(result['Auth key'])
+                            setToken(result?.token_auth)
+                            console.log(result?.token_auth, 'result?.token_auth')
+                            setShowPinCodePopup(true)
+                        }
+                    }
+                    )
+                .catch(error => console.log('error', error));
+        }
+
+    }
+
+    const sendPin = () => {
+
+        console.log(auth_key, 'key')
+        // console.log(auth_key, 'key')
+        if (pin_code.length == 0) {
+            setPinCodeError(true)
+            setPinCodeErrorText('Set Protection code')
+        } else {
+            setPinCodeError(false)
+            setPasswordErrorText('')
+
+            let myHeaders = new Headers();
+
+            let requestOptions = {
+                method: 'POST',
+                headers: myHeaders,
+                redirect: 'follow'
+            };
+
+            fetch(`https://orbicloud.com/pin?set_pin=1&pin_1=${pin_code}&api_access_key=${token}`, requestOptions)
+                .then( response => response.json())
+                .then(async result =>
+                    {
+                        console.log(result, 'pin')
+                        if (result?.success === true) {
+                            let foundUser = {
+                                token: token,
+                            }
+
+                            context.signIn(foundUser, () => {
+                                props.navigation.navigate('Profile')
+
+                            }).then(r => console.log("success"));
+
+                        }
+
+
+                    }
+                )
+            .catch(error => console.log('error', error));
+        }
+    }
 
     return (
         <SafeAreaView style={[styles.container]}>
@@ -70,6 +192,9 @@ function Login (props) {
                         placeholder='Personal Account e-mail'
                         placeholderTextColor='#ffffff80'
                     />
+                    {email_error &&
+                        <Text style={styles.login_text_error}>{email_error_text}</Text>
+                    }
                 </View>
                 <View style={styles.register_input_wrapper}>
                     <TextInput
@@ -92,6 +217,8 @@ function Login (props) {
                         placeholderTextColor='#ffffff80'
                         secureTextEntry={true}
                     />
+
+
                 </View>
                 <View style={styles.register_input_wrapper}>
                     <TextInput
@@ -103,6 +230,9 @@ function Login (props) {
                         placeholderTextColor='#ffffff80'
                         secureTextEntry={true}
                     />
+                    {password_error &&
+                        <Text style={styles.login_text_error}>{password_error_text}</Text>
+                    }
                 </View>
                 <View style={styles.register_input_wrapper}>
                     <TextInput
@@ -113,7 +243,12 @@ function Login (props) {
                         placeholder='Your Financial Mentor (optional)'
                         placeholderTextColor='#ffffff80'
                     />
+                    {login_error &&
+                         <Text style={styles.login_text_error}>{login_error_text}</Text>
+                    }
                 </View>
+
+
                 <View style={styles.register_button_wrapper}>
                         <LinearGradient
                             colors={['#e7459a', '#6e62aa', '#66c8d8']}
@@ -121,7 +256,7 @@ function Login (props) {
                             end={{ x: 1, y: 0 }}
                             style={styles.login_button_linearGradient}
                         >
-                            <TouchableOpacity style={styles.login_button}>
+                            <TouchableOpacity style={styles.login_button} onPress={() => register()}>
                                 <Text style={styles.login_button_text}>
                                     Create Account
                                 </Text>
@@ -137,11 +272,59 @@ function Login (props) {
 
             </ScrollView>
 
+            {show_pin_code_popup &&
+                <View style={styles.show_pin_code_popup}>
+                    <View style={styles.show_pin_code_popup_wrapper}>
+                        <View style={styles.logo}>
+                            <Image style={styles.logo_child_img} source={require('../../../assets/images/logo.png')}/>
+                        </View>
+                        <ScrollView style={styles.show_pin_code_popup_main_part}>
+                                <View style={styles.show_pin_code_popup_main_part_logo_auth_info_wrapper}>
+                                    <View style={styles.show_pin_code_popup_main_part_logo}>
+                                        <Image style={styles.logo_child_img2} source={require('../../../assets/images/logo_ico.png')}/>
+                                    </View>
+                                    <Text style={styles.show_pin_code_popup_main_part_info_title}>Save the Authorization Key in a Safe Place:</Text>
+                                    <Text style={styles.show_pin_code_popup_main_part_info}>{auth_key}</Text>
+                                </View>
+                                    <Text style={styles.show_pin_code_popup_main_part_warning_info}>
+                                        !Do not provide the authorization key to third parties, as this is the only way to authorize and access the income boxes!
+                                    </Text>
+                                    {pin_code_error &&
+                                        <Text style={styles.code_text_error}>{pin_code_error_text}</Text>
+                                    }
+                                    <TextInput
+                                        style={[styles.register_input_field, {marginBottom: 20}]}
+                                        onChangeText={(val) => setPinCode(val)}
+                                        value={pin_code}
+                                        name='financial_mentor'
+                                        placeholder='Security Pin Code for Authorization Key Recovery'
+                                        placeholderTextColor='#ffffff80'
+                                    />
+
+                                    <LinearGradient
+                                        colors={['#e7459a', '#6e62aa', '#66c8d8']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={styles.set_pin_code_button_linearGradient}>
+                                        <TouchableOpacity style={styles.login_button} onPress={() => sendPin()}>
+                                            <Text style={styles.login_button_text}>
+                                                Set PIN code
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </LinearGradient>
+
+                                    <Text style={styles.show_pin_code_popup_main_part_info2}>Use Authorization Key to access OrbiBox</Text>
+
+                        </ScrollView>
+                    </View>
+                </View>
+            }
+
         </SafeAreaView>
     );
 }
 
-export default Login;
+export default Register;
 
 
 const styles = StyleSheet.create({
@@ -212,7 +395,9 @@ const styles = StyleSheet.create({
         borderBottomColor: 'transparent',
         paddingTop: 11,
         paddingBottom: 13,
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
+        fontWeight: '400',
+        fontSize: 13,
     },
     register_input_wrapper: {
         width: '100%',
@@ -281,4 +466,110 @@ const styles = StyleSheet.create({
         marginBottom: 40,
         marginTop: 20,
     },
+    login_text_error: {
+        color: 'red',
+        fontSize: 14,
+        fontWeight: '400',
+        width: '100%',
+        textAlign: 'center',
+        marginTop: 10,
+
+    },
+    code_text_error: {
+        color: 'red',
+        fontSize: 14,
+        fontWeight: '400',
+        width: '100%',
+        textAlign: 'center',
+        marginBottom: 10,
+
+    },
+    show_pin_code_popup: {
+        backgroundColor:  'rgba(157, 148, 148, 0.49)',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 999,
+        zIndex: 999999,
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        // left: 0,
+        // bottom: 0,
+        alignSelf: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    show_pin_code_popup_wrapper: {
+        backgroundColor: '#0c0d21',
+        width: '100%',
+        height: '100%',
+        paddingTop: 30,
+
+    },
+    show_pin_code_popup_main_part_logo_auth_info_wrapper: {
+        backgroundColor: 'rgba(255, 255, 255, 0.088)',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 12,
+        width: '100%',
+        marginBottom: 20,
+    },
+
+    show_pin_code_popup_main_part: {
+        width: '100%',
+        flex: 1,
+        paddingHorizontal: 15,
+
+    },
+    logo_child_img2: {
+        width: 80,
+        height: 80,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center'
+    },
+    show_pin_code_popup_main_part_logo: {
+        width: '100%',
+        marginBottom: 20,
+    },
+    show_pin_code_popup_main_part_info_title: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '500',
+        marginBottom: 10,
+        textAlign: 'center'
+    },
+    show_pin_code_popup_main_part_info:{
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#ad6cff',
+    },
+
+    show_pin_code_popup_main_part_warning_info: {
+        fontSize: 21,
+        fontWeight: '600',
+        color: '#ffffff',
+        marginTop: 12,
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    set_pin_code_button_linearGradient: {
+        width: 160,
+        height: 45,
+        borderRadius: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'center',
+        marginBottom: 40,
+    },
+    show_pin_code_popup_main_part_info2: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#ffffff',
+        textAlign: 'center',
+    }
+
+
 });
