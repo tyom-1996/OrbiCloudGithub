@@ -48,10 +48,11 @@ function Profile (props) {
         let token = await AsyncStorage.getItem('userToken');
         setToken(token)
     }
-    useEffect(() => {
+    useEffect(  () => {
+         // AsyncStorage.clear()
         getToken();
     }, []);
-    
+
     const context = useContext(AuthContext);
 
     const  logout = async () => {
@@ -66,14 +67,14 @@ function Profile (props) {
             redirect: 'follow'
         };
 
-            fetch(`https://orbicloud.com/auth?api_access=100&out=1&api_access_key=${token}`, requestOptions)
+            fetch(`https://orbicloud.com/auth?api_access=100&api_access_key=${token}`, requestOptions)
                 .then(response => response.json())
                 .then(async result => {
                     console.log(result,'logout')
-                    if (result?.success_out === true) {
+                    if (result?.success === true) {
                         context.signOut(() => {
                             props.navigation.navigate('Login')
-
+                            
                         }).then(r => console.log("logOut"));
 
                     }
@@ -84,30 +85,30 @@ function Profile (props) {
 
 
     const WebviewComponent =  () => {
-        // const injectedJavaScript = `
-        // $.ajax({
-        //   type: 'GET',
-        //   url: 'https://orbicloud.com/',
-        //   data: 'app_access_val=121',
-        //   success: function(ex) {
-        //     alert(ex);
-        //   }
-        // });`
+        const injectedJavaScript = `
+      $.ajax({
+        type: ‘GET’,
+        url: 'https://orbicloud.com/?app_access_val = 121'
+        success: function(ex) { 
+            alert(ex); 
+          }
+        });
+       });`
 
 
 
 
-        console.log(`https://orbicloud.com?api_access_key=${token}&app_access_val=121`)
         return (
 
             <WebView
                 style={{
                     height: windowHeight,
                     width: windowWidth,
+                    marginTop: 25
                     // flex: 1,
                 }}
                 useWebKit={true}
-                source={{ uri: `https://orbicloud.com?api_access_key=${token}&app_access_val=121`}}
+                source={{ uri: `https://orbicloud.com/?api_access_key=${token}`}}
                 androidHardwareAccelerationDisabled={true}
                 allowFileAccess={true}
                 javaScriptEnabled={true}
@@ -157,6 +158,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: 20,
         top: 20,
+        zIndex: 9999,
     }
 
 
