@@ -3,10 +3,11 @@ import {useRef, useState, useEffect, } from 'react';
 import Svg, { Mask, Path, Rect, Circle, Defs, Stop, ClipPath, G } from "react-native-svg";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
-import {AuthContext} from "../../AuthContext/context";
+import {AuthContext} from "../AuthContext/context";
 import { useContext } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { WebView } from 'react-native-webview';
+import LogoutIcon from '../../assets/svg/Logout'
 
 
 
@@ -41,38 +42,96 @@ const windowHeight = Dimensions.get('window').height;
 
 function Profile (props) {
 
+    const [token, setToken] = useState(null);
+
+    const getToken = async () => {
+        let token = await AsyncStorage.getItem('userToken');
+        setToken(token)
+    }
+    useEffect(() => {
+        getToken();
+    }, []);
+    
+    const context = useContext(AuthContext);
+
+    const  logout = async () => {
+
+         let token = await AsyncStorage.getItem('userToken');
+
+        let myHeaders = new Headers();
+
+        let requestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            redirect: 'follow'
+        };
+
+            fetch(`https://orbicloud.com/auth?api_access=100&out=1&api_access_key=${token}`, requestOptions)
+                .then(response => response.json())
+                .then(async result => {
+                    console.log(result,'logout')
+                    if (result?.success_out === true) {
+                        context.signOut(() => {
+                            props.navigation.navigate('Login')
+
+                        }).then(r => console.log("logOut"));
+
+                    }
+                })
+                .catch(error => console.log('error', error));
+    }
+
+
+
+    const WebviewComponent =  () => {
+        // const injectedJavaScript = `
+        // $.ajax({
+        //   type: 'GET',
+        //   url: 'https://orbicloud.com/',
+        //   data: 'app_access_val=121',
+        //   success: function(ex) {
+        //     alert(ex);
+        //   }
+        // });`
+
+
+
+
+        console.log(`https://orbicloud.com?api_access_key=${token}&app_access_val=121`)
+        return (
+
+            <WebView
+                style={{
+                    height: windowHeight,
+                    width: windowWidth,
+                    // flex: 1,
+                }}
+                useWebKit={true}
+                source={{ uri: `https://orbicloud.com?api_access_key=${token}&app_access_val=121`}}
+                androidHardwareAccelerationDisabled={true}
+                allowFileAccess={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                // injectedJavaScript={injectedJavaScript}
+                onNavigationStateChange={(webViewState)=>{
+                    // console.log(payment_url, 'payment_url');
+
+                }}
+            />
+
+        )
+
+
+    }
+
 
     return (
         <SafeAreaView style={[styles.container]}>
-          <Text>helooo</Text>
-            <WebView
-                style={{
-                    height: '100%',
-                    width: '100%',
-                    flex: 1,
-                }}
-                useWebKit={true}
-                source={{ uri: 'https://swiperjs.com/demos'}}
-                androidHardwareAccelerationDisabled={true}
-                allowFileAccess={true}
-                onNavigationStateChange={(webViewState)=>{
-                    // console.log(payment_url, 'payment_url');
-                    console.log(webViewState.url, 'WebView onNavigationStateChange')
-                    console.log(webViewState.url.indexOf('https://yoomoney.ru/checkout/payments/v2/success?orderId'), 'WebView succss')
+            <TouchableOpacity style={styles.logout_btn} onPress={() => logout()}>
+                <LogoutIcon/>
+            </TouchableOpacity>
+            <WebviewComponent/>
 
-                    if(webViewState.url.indexOf('https://farm-meat.site/shop/orders/payment/view/') !== -1)
-                    {
-                        console.log('cancel')
-
-                    } else if (webViewState.url.indexOf('https://yoomoney.ru/checkout/payments/v2/success?orderId') !== -1) {
-                        console.log('sucess');
-                    }
-
-
-                }}
-                javaScriptEnabled = {true}
-                // domStorageEnabled = {true}
-            />
         </SafeAreaView>
     );
 }
@@ -93,6 +152,12 @@ const styles = StyleSheet.create({
         paddingTop: 30,
 
     },
+
+    logout_btn: {
+        position: 'absolute',
+        right: 20,
+        top: 20,
+    }
 
 
 

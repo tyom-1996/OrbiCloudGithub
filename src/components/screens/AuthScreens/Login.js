@@ -62,9 +62,9 @@ function Login (props) {
         } else {
             setAuthKeyError(false)
             setAuthKeyErrorText('')
-            var myHeaders = new Headers();
+            let myHeaders = new Headers();
 
-            var requestOptions = {
+            let requestOptions = {
                 method: 'POST',
                 headers: myHeaders,
                 redirect: 'follow'
