@@ -49,7 +49,6 @@ function Profile (props) {
         setToken(token)
     }
     useEffect(  () => {
-         // AsyncStorage.clear()
         getToken();
     }, []);
 
@@ -58,6 +57,7 @@ function Profile (props) {
     const  logout = async () => {
 
          let token = await AsyncStorage.getItem('userToken');
+
 
         let myHeaders = new Headers();
 
@@ -74,7 +74,7 @@ function Profile (props) {
                     if (result?.success === true) {
                         context.signOut(() => {
                             props.navigation.navigate('Login')
-                            
+
                         }).then(r => console.log("logOut"));
 
                     }
@@ -85,17 +85,27 @@ function Profile (props) {
 
 
     const WebviewComponent =  () => {
+        const postData = {
+            app_access_val: 121,
+        };
+
         const injectedJavaScript = `
-      $.ajax({
-        type: ‘GET’,
-        url: 'https://orbicloud.com/?app_access_val = 121'
-        success: function(ex) { 
-            alert(ex); 
-          }
-        });
-       });`
+    $.ajax({
+        type: 'POST',
+        url: 'https://orbicloud.com/',
+        data: ${JSON.stringify(postData)},
+        success: function(response) { 
+        },
+        error: function(error) {
+            console.error('Error:', error);
+        }
+    });`;
 
 
+
+        console.log(token, 'token')
+
+        // ic_launcher.png
 
 
         return (
@@ -104,7 +114,6 @@ function Profile (props) {
                 style={{
                     height: windowHeight,
                     width: windowWidth,
-                    marginTop: 25
                     // flex: 1,
                 }}
                 useWebKit={true}
@@ -113,12 +122,20 @@ function Profile (props) {
                 allowFileAccess={true}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
-                // injectedJavaScript={injectedJavaScript}
+                injectedJavaScript={injectedJavaScript}
                 onNavigationStateChange={(webViewState)=>{
-                    // console.log(payment_url, 'payment_url');
+                    console.log(webViewState, 'webViewState');
+                    if (webViewState.url.indexOf('https://orbicloud.com/base.php') !== -1)   {
+                        console.log('logout')
+                        context.signOut(() => {
+                            props.navigation.navigate('Login')
+
+                        }).then(r => console.log("logOut2"));
+                    }
 
                 }}
             />
+
 
         )
 
@@ -128,9 +145,9 @@ function Profile (props) {
 
     return (
         <SafeAreaView style={[styles.container]}>
-            <TouchableOpacity style={styles.logout_btn} onPress={() => logout()}>
-                <LogoutIcon/>
-            </TouchableOpacity>
+            {/*<TouchableOpacity style={styles.logout_btn} onPress={() => logout()}>*/}
+            {/*    <LogoutIcon/>*/}
+            {/*</TouchableOpacity>*/}
             <WebviewComponent/>
 
         </SafeAreaView>

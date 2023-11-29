@@ -6,6 +6,7 @@ import { useColorScheme } from 'react-native';
 import {AuthContext} from "../../AuthContext/context";
 import { useContext } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
+import Clipboard from '@react-native-clipboard/clipboard';
 
 
 
@@ -284,7 +285,9 @@ function Register (props) {
                                         <Image style={styles.logo_child_img2} source={require('../../../assets/images/logo_ico.png')}/>
                                     </View>
                                     <Text style={styles.show_pin_code_popup_main_part_info_title}>Save the Authorization Key in a Safe Place:</Text>
-                                    <Text style={styles.show_pin_code_popup_main_part_info}>{auth_key}</Text>
+                                    <TouchableOpacity onPress={() => Clipboard.setString(auth_key)}>
+                                        <Text style={styles.show_pin_code_popup_main_part_info}>{auth_key}</Text>
+                                    </TouchableOpacity>
                                 </View>
                                     <Text style={styles.show_pin_code_popup_main_part_warning_info}>
                                         !Do not provide the authorization key to third parties, as this is the only way to authorize and access the income boxes!
